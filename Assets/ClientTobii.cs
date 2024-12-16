@@ -5,6 +5,9 @@ using System.Threading;
 using System.Collections.Concurrent;
 using UnityEngine;
 using UnityEngine.UI;
+using Unity.Robotics.ROSTCPConnector;
+using Unity.Robotics.ROSTCPConnector.MessageGeneration;
+using RosMessageTypes.Std;
 
 public class ClientTobii : MonoBehaviour
 {
@@ -43,6 +46,16 @@ public class ClientTobii : MonoBehaviour
         clientThread = new Thread(ManageConnection);
         clientThread.IsBackground = true;
         clientThread.Start();
+
+        ROSConnection.GetOrCreateInstance().RegisterPublisher<Float32MultiArrayMsg>("/gaze/pixel_coordinates");
+
+        ROSConnection.GetOrCreateInstance().RegisterPublisher<Float32MultiArrayMsg>("/gaze/left_eye_origin");
+        ROSConnection.GetOrCreateInstance().RegisterPublisher<Float32MultiArrayMsg>("/gaze/left_eye_direction");
+        ROSConnection.GetOrCreateInstance().RegisterPublisher<Float32Msg>("/gaze/left_eye_pupil");
+
+        ROSConnection.GetOrCreateInstance().RegisterPublisher<Float32MultiArrayMsg>("/gaze/right_eye_origin");
+        ROSConnection.GetOrCreateInstance().RegisterPublisher<Float32MultiArrayMsg>("/gaze/right_eye_direction");
+        ROSConnection.GetOrCreateInstance().RegisterPublisher<Float32Msg>("/gaze/right_eye_pupil");
     }
 
     private void ManageConnection()
@@ -120,14 +133,30 @@ public class ClientTobii : MonoBehaviour
 
                             // Update Inspector variables
                             gaze2D = new Vector2(gazeData.gaze2d[0], gazeData.gaze2d[1]);
+
                             gazePixelCoords = new Vector2(gazeData.gazePixelCoords[0], gazeData.gazePixelCoords[1]);
+                            PublishToROSVector2(gazePixelCoords, "/gaze/pixel_coordinates");
+
                             gaze3D = new Vector3(gazeData.gaze3d[0], gazeData.gaze3d[1], gazeData.gaze3d[2]);
+
                             leftEyeOrigin = new Vector3(gazeData.eyeleft.gazeorigin[0], gazeData.eyeleft.gazeorigin[1], gazeData.eyeleft.gazeorigin[2]);
+                            PublishToROSVector3(leftEyeOrigin, "/gaze/left_eye_origin");
+
                             leftEyeDirection = new Vector3(gazeData.eyeleft.gazedirection[0], gazeData.eyeleft.gazedirection[1], gazeData.eyeleft.gazedirection[2]);
+                            PublishToROSVector3(leftEyeDirection, "/gaze/left_eye_direction");
+
                             leftPupilDiameter = gazeData.eyeleft.pupildiameter;
+                            PublishToROSFloat32(leftPupilDiameter, "/gaze/left_eye_pupil");
+
                             rightEyeOrigin = new Vector3(gazeData.eyeright.gazeorigin[0], gazeData.eyeright.gazeorigin[1], gazeData.eyeright.gazeorigin[2]);
+                            PublishToROSVector3(rightEyeOrigin, "/gaze/right_eye_origin");
+
                             rightEyeDirection = new Vector3(gazeData.eyeright.gazedirection[0], gazeData.eyeright.gazedirection[1], gazeData.eyeright.gazedirection[2]);
+                            PublishToROSVector3(rightEyeDirection, "/gaze/right_eye_direction");
+
                             rightPupilDiameter = gazeData.eyeright.pupildiameter;
+                            PublishToROSFloat32(rightPupilDiameter, "/gaze/right_eye_pupil");
+
                         }
                         catch (Exception)
                         {
@@ -151,22 +180,34 @@ public class ClientTobii : MonoBehaviour
         }
     }
 
-    private Texture2D Base64ToTexture(string base64)
-    {
-        try
+    private void PublishToROSFloat32(float data, string topicName){
+
+        Float32Msg floatMsg = new Float32Msg {data = data};
+        ROSConnection.GetOrCreateInstance().Publish(topicName, floatMsg);
+    }
+
+    private void PublishToROSVector3(Vector3 data, string topicName){
+
+        Float32MultiArrayMsg vector2Msg = new Float32MultiArrayMsg
         {
-            byte[] imageData = Convert.FromBase64String(base64);
-            Texture2D texture = new Texture2D(2, 2);
-            if (texture.LoadImage(imageData))
-            {
-                return texture;
-            }
-        }
-        catch (Exception e)
+            data = new float[] { data.x, data.y, data.z }
+        };
+
+        // Publish to the topic
+        ROSConnection.GetOrCreateInstance().Publish(topicName, vector2Msg);
+
+    }
+
+    private void PublishToROSVector2(Vector2 data, string topicName){
+
+        Float32MultiArrayMsg vector2Msg = new Float32MultiArrayMsg
         {
-            Debug.LogError($"Error decoding base64 image: {e.Message}");
-        }
-        return null;
+            data = new float[] { data.x, data.y }
+        };
+
+        // Publish to the topic
+        ROSConnection.GetOrCreateInstance().Publish(topicName, vector2Msg);
+
     }
 
     private void RunOnMainThread(Action action)
