@@ -9,7 +9,7 @@ This data is sent to **ROS** with [ROS-TCP-Connector](https://github.com/Unity-T
 ## Instructions
 1. Download Unity 2021.3.42
 2. Clone the [Tobii Glasses 3 Server](https://github.com/lagenuina/TobiiGlasses3-Server.git) repository and follow the instructions to set up the project. This repository is **required**: it uses the Tobii Glasses 3 Python library to handle communication with the Glasses3 WebSocket API. It acts as a server for streaming real-time data from Tobii Glasses 3 to Unity
-3. Clone this repository:
+3. Clone this repository into a separate directory from the Tobii Glasses 3 Server:
    ```
    git clone https://github.com/lagenuina/TobiiGlasses3-Unity-ROS.git
    ```
